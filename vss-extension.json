@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "id": "CycleTimeHistogramExtension",
     "publisher": "AltamirJuniorDias",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "name": "Cycle Time Histogram",
     "description": "Cycle Time Histogram",
     "public": true,
