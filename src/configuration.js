@@ -1,35 +1,14 @@
 (() => {
-    /* PUBLIC */
-    window.WidgetConfiguration = {
-        init: (WidgetHelpers) => {
-            widgetHelpers = WidgetHelpers;
-        },
+    let $context = null;
+    let $widgetEvent = null;
 
-        load: (widgetSettings, widgetConfigurationContext) => {
-            context = widgetConfigurationContext;
+    let $title = $('#title');
+    let $query = $('#query');
+    let $cycleTimeStartField = $('#cycle-time-start-field');
+    let $cycleTimeEndField = $('#cycle-time-end-field');
+    let $percentiles = $('#percentiles');    
 
-            var settings = getSettings(widgetSettings);
-            prepareControls(settings);
-
-            return widgetHelpers.WidgetStatusHelper.Success();
-        },
-
-        save: (widgetSettings) => {
-            return widgetHelpers.WidgetConfigurationSave.Valid(getSettingsToSave());
-        }
-    };
-
-    /* PRIVATE */
-    var context;
-    var widgetHelpers;
-
-    var $title = $('#title');
-    var $query = $('#query');
-    var $cycleTimeStartField = $('#cycle-time-start-field');
-    var $cycleTimeEndField = $('#cycle-time-end-field');
-    var $percentiles = $('#percentiles');
-
-    var addQueryToSelect = (query, level) => {
+    const addQueryToSelect = (query, level) => {
         level = level ?? 0;
 
         if (query.isFolder ?? false) {
@@ -55,16 +34,16 @@
         }
     };
 
-    var changeSettings = () => {
+    const changeSettings = () => {
         settings = getSettingsToSave();
 
-        var eventName = widgetHelpers.WidgetEvent.ConfigurationChange;
-        var eventArgs = widgetHelpers.WidgetEvent.Args(settings);
-        context.notify(eventName, eventArgs);
-    };
+        let eventName = $widgetEvent.ConfigurationChange;
+        let eventArgs = $widgetEvent.Args(settings);
+        $context.notify(eventName, eventArgs);
+    };    
 
-    var getSettings = (widgetSettings) => {
-        var settings = JSON.parse(widgetSettings.customSettings.data);
+    const getSettings = (widgetSettings) => {
+        let settings = JSON.parse(widgetSettings.customSettings.data);
 
         return {
             title: settings?.title ?? 'Cycle Time',
@@ -73,10 +52,10 @@
             cycleTimeEndField: settings?.cycleTimeEndField ?? '',
             percentiles: settings?.percentiles ?? ''
         };
-    };
+    };    
 
-    var getSettingsToSave = () => {
-        var percentiles = $percentiles
+    const getSettingsToSave = () => {
+        let percentiles = $percentiles
             .val()
             .split(',')
             .filter(p => !isNaN(parseInt(p, 10)))
@@ -93,10 +72,17 @@
         };
     };
 
-    var prepareControls = (settings) => {
-        var deferred = $.Deferred();
+    const loadConfiguration = (settings, context, widgetEvent) => {
+        $context = context;
+        $widgetEvent = widgetEvent;
 
-        window.AzureDevOpsProxy.getSharedQueries().then(queries => {
+        prepareControls(getSettings(settings));
+    };
+
+    const prepareControls = (settings) => {
+        let deferred = $.Deferred();
+
+        AzureDevOps.Queries.getAllShared().then(queries => {
             $query.append($('<option>'));
 
             queries.forEach(query => {
@@ -109,9 +95,7 @@
                 deferreds.push(updateDateFields($cycleTimeStartField, $cycleTimeStartField.val()));
                 deferreds.push(updateDateFields($cycleTimeEndField, $cycleTimeEndField.val()));
 
-                Promise.all(deferreds).then(result => {
-                    changeSettings();
-                });
+                Promise.all(deferreds).then(_ => changeSettings());
             });
             $cycleTimeStartField.on('change', changeSettings);
             $cycleTimeEndField.on('change', changeSettings);
@@ -125,9 +109,7 @@
             deferreds.push(updateDateFields($cycleTimeStartField, settings.cycleTimeStartField));
             deferreds.push(updateDateFields($cycleTimeEndField, settings.cycleTimeEndField));
 
-            Promise.all(deferreds).then(result => {
-                deferred.resolve();
-            });
+            Promise.all(deferreds).then(_ => deferred.resolve());
 
             deferred.resolve();
         });
@@ -135,17 +117,19 @@
         return deferred.promise();
     };
 
-    var updateDateFields = (dateField, currentValue) => {
-        var deferred = $.Deferred();
+    const updateDateFields = (dateField, currentValue) => {
+        let deferred = $.Deferred();
 
-        window.AzureDevOpsProxy.getQueryDateFields($query.val()).then(fields => {
+        AzureDevOps.Queries.getFields($query.val()).then(fields => {
             dateField.html('');
 
-            fields.forEach(field => {
-                dateField.append($('<option>')
-                    .val(field.referenceName)
-                    .html(field.name));
-            });
+            fields
+                .filter(field => field.type == 2)
+                .forEach(field => {
+                    dateField.append($('<option>')
+                        .val(field.referenceName)
+                        .html(field.name));
+                });
 
             if (fields.filter(field => field.referenceName == currentValue).length > 0)
             {
@@ -161,4 +145,7 @@
 
         return deferred.promise();
     };
+
+    window.LoadConfiguration = loadConfiguration;
+    window.GetSettingsToSave = getSettingsToSave;
 })();

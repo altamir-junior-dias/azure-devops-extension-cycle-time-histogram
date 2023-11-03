@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "id": "CycleTimeHistogramExtension",
     "publisher": "AltamirJuniorDias",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "name": "Cycle Time Histogram",
     "description": "Cycle Time Histogram",
     "public": true,
@@ -37,7 +37,7 @@
                 "description": "Cycle Time histogram with percentiles",
                 "catalogIconUrl": "images/icon.png",
                 "previewImageUrl": "images/icon.png",
-                "uri": "widgets-cycle-time-widget.html",
+                "uri": "widget.html",
                 "supportedSizes": [
                     {
                         "rowSpan": 2,
@@ -136,7 +136,7 @@
             "properties": {
                 "name": "Cycle Time - Configuration",
                 "description": "Cycle Time - Configuration",
-                "uri": "widgets-cycle-time-configuration.html"
+                "uri": "configuration.html"
             }
         }
     ],

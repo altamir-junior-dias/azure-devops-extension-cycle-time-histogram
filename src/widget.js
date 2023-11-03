@@ -1,24 +1,10 @@
 (() => {
-    /* PUBLIC */
+    let $chart = $('#chart');
+    let $message = $('#message');
+    let $title = $('#title');
 
-    window.Widget = {
-        load: (widgetSettings) => {
-            var settings = getSettings(widgetSettings); 
-
-            $('#title').text(settings.title);
-
-            getData(settings).then(data => {
-                prepareChart(data, settings.percentiles);
-            });
-
-            return window.WidgetHelpers.WidgetStatusHelper.Success();
-        }
-    };
-
-    /* PRIVATE */
-
-    var getChartConfiguration = (data, percentiles) => {
-        var config = {
+    const getChartConfiguration = (data, percentiles) => {
+        let config = {
             type: 'BarPercentile',
             data: {
                 labels: data.map(d => d.cycleTime),
@@ -48,32 +34,32 @@
         return config;
     };
 
-    var getData = (settings) => {
-        var deferred = $.Deferred();
+    const getData = (settings) => {
+        let deferred = $.Deferred();
 
-        window.AzureDevOpsProxy.getQueryWiql(settings.query, false).then(query => {
-            window.AzureDevOpsProxy.getItemsFromQuery(query, true).then(items => {
-                var cycleTimes = [];
+        AzureDevOps.Queries.getById(settings.query).then(query => {
+            AzureDevOps.Queries.getItems(query).then(itemsFromQuery => {
+                let cycleTimes = [];
 
-                items.forEach(item => {
-                    var startValue = item[settings.cycleTimeStartField];
-                    var endValue = item[settings.cycleTimeEndField];
+                itemsFromQuery.forEach(item => {
+                    let startValue = item[settings.cycleTimeStartField];
+                    let endValue = item[settings.cycleTimeEndField];
 
                     if (startValue !== undefined && startValue != null && startValue != '' && endValue !== undefined && endValue != null && endValue != '')
                     {
-                        var startDate = new Date(startValue);
-                        var endDate = new Date(endValue);
+                        let startDate = new Date(startValue);
+                        let endDate = new Date(endValue);
 
                         cycleTimes.push(Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1);
                     }
                 });
 
-                var groups = cycleTimes.reduce((a, c) => (a[c] = (a[c] || 0) + 1, a), Object.create(null));
-                var min = Math.min(...cycleTimes);
-                var max = Math.max(...cycleTimes);
+                let groups = cycleTimes.reduce((a, c) => (a[c] = (a[c] || 0) + 1, a), Object.create(null));
+                let min = Math.min(...cycleTimes);
+                let max = Math.max(...cycleTimes);
 
-                var items = [];
-                for (var index = min; index <= max; index++) {
+                let items = [];
+                for (let index = min; index <= max; index++) {
                     items.push({ cycleTime: index, items: groups[index] ?? 0 });
                 }
 
@@ -84,8 +70,8 @@
         return deferred.promise();
     };
 
-    var getSettings = (widgetSettings) => {
-        var settings = JSON.parse(widgetSettings.customSettings.data);
+    const getSettings = (widgetSettings) => {
+        let settings = JSON.parse(widgetSettings.customSettings.data);
 
         return {
             title: settings?.title ?? 'Cycle Time',
@@ -94,20 +80,32 @@
             cycleTimeEndField: settings?.cycleTimeEndField ?? '',
             percentiles: settings?.percentiles ?? ''
         };
+    };    
+
+    const load = (widgetSettings) => {
+        let settings = getSettings(widgetSettings); 
+
+        $title.text(settings.title);
+
+        getData(settings).then(data => {
+            prepareChart(data, settings.percentiles);
+        });
     };
 
-    var prepareChart = (data, percentiles) => {
-        $('#chart').show();
-        $('#message').hide();
+    const prepareChart = (data, percentiles) => {
+        $chart.show();
+        $message.hide();
 
         if (data.length == 0) {
-            $('#chart').hide();
-            $('#message').show();
+            $chart.hide();
+            $message.show();
 
-            $('#message').text('There aren\'t data to show');
+            $message.text('There aren\'t data to show');
         }
 
-        var chartArea = document.getElementById('chart');
-        var chart = new Chart(chartArea, getChartConfiguration(data, percentiles));
-    }; 
+        let chartArea = document.getElementById('chart');
+        let chart = new Chart(chartArea, getChartConfiguration(data, percentiles));
+    };
+
+    window.LoadWidget = load;
 })();
